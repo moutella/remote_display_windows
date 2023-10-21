@@ -1,0 +1,4 @@
+env
+activate
+*.json
+__pycache__
