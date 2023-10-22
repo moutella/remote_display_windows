@@ -8,6 +8,7 @@ app = FastAPI()
 
 display = DisplayHelper()
 
+
 @app.get("/")
 def read_root():
     """Returns Custom Monitor Config"""
@@ -24,6 +25,7 @@ def save_display_config(monitor_id: int):
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
+
 @app.get("/display/config/")
 @app.get("/display/config/{rdrc_id}")
 def get_config(rdrc_id: int = None):
@@ -39,10 +41,10 @@ def get_config(rdrc_id: int = None):
     return display.get_config()
 
 
-
 class Monitor(BaseModel):
     rdrc_id: int = None
     logical_name: str = None
+
 
 @app.delete("/display/")
 def disable_monitor(RDRC: Monitor):
@@ -55,21 +57,30 @@ def disable_monitor(RDRC: Monitor):
     else:
         raise HTTPException(status_code=404, detail="Could not find monitor")
 
+
 class MonitorConfig(BaseModel):
     rdrc_id: int = None
     logical_name: str = None
     width: int = 1920
     height: int = 1080
     refresh_rate: int = 60
-    position_x: int = 0
-    position_y: int = 0
+    position_x: int = None
+    position_y: int = None
     active: bool = False
 
+
 @app.post("/display/")
-def enable_monitor(RDRC: MonitorConfig):
-    print(RDRC)
-    logical_name = RDRC.logical_name
+def enable_monitor(Config: MonitorConfig):
+    logical_name = Config.logical_name
     if logical_name:
-        display.set_display_config(logical_name, 1920, 1080, 60, 0, 0, False)
+        display.set_display_config(
+            Config.logical_name,
+            Config.width,
+            Config.height,
+            Config.refresh_rate,
+            Config.position_x,
+            Config.position_y,
+            Config.active,
+        )
     else:
         raise HTTPException(status_code=404, detail="Could not find monitor")
