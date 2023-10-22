@@ -106,3 +106,19 @@ class DisplayHelper:
             win32api.ChangeDisplaySettingsEx(
                 device_name, None, win32con.CDS_UPDATEREGISTRY
             )
+
+    def get_active_displays(self):
+        configs = self.get_config()
+        print(list(configs.values()))
+        displays = [x["logical_name"] for x in list(configs.values())]
+        print(displays)
+        return displays
+
+    def check_display_active(self, logical_name_list):
+        displays = self.get_active_displays()
+        for checked_device in logical_name_list:
+            print(displays)
+            print(checked_device)
+            if checked_device not in displays:
+                return False
+        return True

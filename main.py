@@ -1,3 +1,4 @@
+import time
 from controllers.display import get_config_mock, save_config
 from typing import Union
 from fastapi import FastAPI, HTTPException
@@ -70,17 +71,35 @@ class MonitorConfig(BaseModel):
 
 
 @app.post("/display/")
-def enable_monitor(Config: MonitorConfig):
+def enable_configuration(Config: MonitorConfig):
     logical_name = Config.logical_name
     if logical_name:
+        while not display.check_display_active([logical_name]):
+            display.set_display_config(
+                Config.logical_name,
+                1920,
+                1080,
+                60,
+                active=False,
+            )
+            time.sleep(2)
+        active_displays = display.get_active_displays()
+        active_displays.remove(logical_name)
+        for active_display in active_displays:
+            display.disable_monitor(active_display)
+            time.sleep(2)
         display.set_display_config(
             Config.logical_name,
             Config.width,
             Config.height,
             Config.refresh_rate,
-            Config.position_x,
-            Config.position_y,
-            Config.active,
+            active=True,
         )
     else:
         raise HTTPException(status_code=404, detail="Could not find monitor")
+
+
+@app.get("/display/")
+def check_active(monitor: Monitor):
+    logical_name = monitor.logical_name
+    return display.check_display_active([logical_name])
