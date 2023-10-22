@@ -1,9 +1,12 @@
 from controllers.display import get_config_mock, save_config
 from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from controllers.monitor import DisplayHelper
 
 app = FastAPI()
 
+display = DisplayHelper()
 
 @app.get("/")
 def read_root():
@@ -21,16 +24,52 @@ def save_display_config(monitor_id: int):
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
-
-@app.get("/resolution")
-def get_config(item_id: int = None):
+@app.get("/display/config/")
+@app.get("/display/config/{rdrc_id}")
+def get_config(rdrc_id: int = None):
     """Returns"""
-    print(item_id)
-    displays = []
+    print(rdrc_id)
+    if rdrc_id is not None:
+        print(rdrc_id)
+        config = display.get_hardware_config(rdrc_id)
+        if config:
+            return config
+        else:
+            raise HTTPException(status_code=404, detail="Could not find monitor")
+    return display.get_config()
 
-    return {"displays": displays}
 
 
-@app.post("/resolution")
-def set_resolution(item_id: int = None):
-    print(item_id)
+class Monitor(BaseModel):
+    rdrc_id: int = None
+    logical_name: str = None
+
+@app.delete("/display/")
+def disable_monitor(RDRC: Monitor):
+    print(RDRC)
+    rdrc_id = RDRC.rdrc_id
+    config = display.get_hardware_config(rdrc_id)
+    print(config)
+    if config:
+        display.disable_monitor(config["logical_name"])
+    else:
+        raise HTTPException(status_code=404, detail="Could not find monitor")
+
+class MonitorConfig(BaseModel):
+    rdrc_id: int = None
+    logical_name: str = None
+    width: int = 1920
+    height: int = 1080
+    refresh_rate: int = 60
+    position_x: int = 0
+    position_y: int = 0
+    active: bool = False
+
+@app.post("/display/")
+def enable_monitor(RDRC: MonitorConfig):
+    print(RDRC)
+    logical_name = RDRC.logical_name
+    if logical_name:
+        display.set_display_config(logical_name, 1920, 1080, 60, 0, 0, False)
+    else:
+        raise HTTPException(status_code=404, detail="Could not find monitor")
